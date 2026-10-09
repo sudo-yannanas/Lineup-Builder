@@ -4,19 +4,20 @@
    - Mode "clic puis clic" en complément (utile sur mobile, où le
      Drag & Drop HTML5 ne fonctionne pas).
    Un joueur peut aller : banc -> terrain, terrain -> banc,
-   ou changer de position sur le terrain (échange si occupée).
+   vers les remplaçants, ou changer de position sur le terrain.
    ========================================================== */
 
 let draggedCard = null;   // carte en cours de glissement
 let selectedCard = null;  // carte sélectionnée par clic
 
-/** Retourne la cible de dépôt (zone du terrain ou banc) contenant l'élément. */
+/** Retourne la cible de dépôt (zone du terrain, banc ou remplaçants) contenant l'élément. */
 function getDropTarget(el) {
   if (!(el instanceof Element)) return null;
-  return el.closest(".dz, #bench");
+  // AJOUT : Ajout de #subs comme zone valide
+  return el.closest(".dz, #bench, #subs");
 }
 
-/** Déplace une carte vers une zone (.dz) ou vers le banc (#bench). */
+/** Déplace une carte vers une zone (.dz), le banc (#bench) ou les remplaçants (#subs). */
 function moveCard(card, target) {
   if (!card || !target) return;
 
@@ -30,7 +31,8 @@ function moveCard(card, target) {
   }
 
   target.appendChild(card);
-  onLineupChange();
+  // Fait appel à la fonction dans app.js pour mettre à jour les compteurs
+  if (typeof onLineupChange === "function") onLineupChange();
 }
 
 function clearSelection() {
@@ -93,7 +95,10 @@ function initDragDrop() {
     const card = e.target.closest(".player");
     const zone = e.target.closest(".dz");
     const bench = e.target.closest("#bench");
-    if (!card && !zone && !bench) return;
+    const subs = e.target.closest("#subs"); // AJOUT : Constante pour les remplaçants
+
+    // AJOUT : On inclut subs dans la condition de sortie
+    if (!card && !zone && !bench && !subs) return;
 
     if (selectedCard) {
       if (card === selectedCard) {            // re-clic : on désélectionne
@@ -101,12 +106,15 @@ function initDragDrop() {
       } else if (zone) {                      // vers une zone du terrain
         moveCard(selectedCard, zone);
         clearSelection();
-      } else if (card) {                      // autre carte du banc : on change de sélection
+      } else if (card) {                      // autre carte : on change de sélection
         clearSelection();
         selectedCard = card;
         card.classList.add("selected");
       } else if (bench) {                     // vers le banc
         moveCard(selectedCard, bench);
+        clearSelection();
+      } else if (subs) {                      // AJOUT : vers les remplaçants
+        moveCard(selectedCard, subs);
         clearSelection();
       }
     } else if (card) {

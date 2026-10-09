@@ -61,6 +61,13 @@
         <div class="dz" data-slot="9"></div>
         <div class="dz" data-slot="10"></div>
       </div>
+
+      <!-- Zone des remplaçants -->
+      <div class="subs-wrap">
+        <h3>🔄 Remplaçants</h3>
+        <div id="subs" class="subs-zone"></div>
+      </div>
+
       <p class="hint">
         Glissez-déposez les joueurs (ou cliquez un joueur puis sa destination).<br>
         <strong>Double-clic</strong> ou <strong>clic droit</strong> sur un joueur : capitaine.
@@ -88,7 +95,35 @@
 
       <div class="panel-block grow">
         <h2>Banc de touche</h2>
+        
+        <!-- Système de filtres existant -->
+        <div class="filter-controls">
+          <input type="text" id="search-player" placeholder="Rechercher un joueur..." class="input-search">
+          <div class="filter-buttons">
+            <button class="btn btn-filter active" data-poste="ALL">Tous</button>
+            <button class="btn btn-filter" data-poste="GB">GB</button>
+            <button class="btn btn-filter" data-poste="DEF">DEF</button>
+            <button class="btn btn-filter" data-poste="MIL">MIL</button>
+            <button class="btn btn-filter" data-poste="ATT">ATT</button>
+          </div>
+        </div>
+        
         <div id="bench" class="bench"></div>
+      </div>
+
+      <!-- NOUVEAU : Formulaire d'ajout rapide -->
+      <div class="panel-block">
+        <label>Ajout rapide (Joueur temporaire)</label>
+        <div style="display: flex; gap: 5px;">
+          <input type="text" id="custom-player-name" placeholder="Nom..." class="input-search" style="flex: 1;">
+          <select id="custom-player-poste" class="input-search" style="width: 75px; padding: 0.5rem;">
+            <option value="GB">GB</option>
+            <option value="DEF">DEF</option>
+            <option value="MIL">MIL</option>
+            <option value="ATT" selected>ATT</option>
+          </select>
+          <button id="add-custom-player-btn" class="btn btn-primary" title="Ajouter au banc">+</button>
+        </div>
       </div>
     </aside>
 

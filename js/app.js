@@ -67,6 +67,64 @@ function toggleCaptain(card) {
   }
 }
 
+/* ---------- Filtres du banc ---------- */
+let currentSearch = "";
+let currentFilter = "ALL";
+
+// Fonction utilitaire pour enlever les accents (ex: Lefèvre -> lefevre)
+function normalizeText(text) {
+  return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function applyFilters() {
+  // App.cards est une Map (Map<id, Element>). On itère sur ses valeurs.
+  App.cards.forEach(function (card) {
+    const nameEl = card.querySelector(".name");
+    if (!nameEl) return;
+    
+    const nom = normalizeText(nameEl.textContent);
+    const searchString = normalizeText(currentSearch);
+    const poste = card.dataset.poste; // Récupère GB, DEF, MIL ou ATT
+    
+    const matchSearch = nom.includes(searchString);
+    const matchFilter = currentFilter === "ALL" || poste === currentFilter;
+    
+    // Si le joueur correspond, on enlève la classe "filtered-out"
+    if (matchSearch && matchFilter) {
+      card.classList.remove("filtered-out");
+    } else {
+      card.classList.add("filtered-out");
+    }
+  });
+}
+
+function initFilters() {
+  const searchInput = document.getElementById("search-player");
+  const filterBtns = document.querySelectorAll(".btn-filter");
+
+  if (searchInput) {
+    searchInput.addEventListener("input", function (e) {
+      currentSearch = e.target.value;
+      applyFilters();
+    });
+  }
+
+  if (filterBtns.length > 0) {
+    filterBtns.forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        // e.currentTarget assure qu'on clique bien sur le bouton
+        const targetBtn = e.currentTarget; 
+        
+        filterBtns.forEach(b => b.classList.remove("active"));
+        targetBtn.classList.add("active");
+        
+        currentFilter = targetBtn.getAttribute("data-poste");
+        applyFilters();
+      });
+    });
+  }
+}
+
 /* ---------- Mises à jour après chaque changement ---------- */
 function onLineupChange() {
   // Un joueur renvoyé sur le banc perd le brassard
@@ -92,14 +150,22 @@ function onLineupChange() {
   }
 }
 
-/** Renvoie tous les joueurs au banc et retire le capitaine. */
+/** Renvoie tous les joueurs (terrain + remplaçants) au banc et retire le capitaine. */
 function clearPitch() {
   const bench = document.getElementById("bench");
+  
+  // Vider le terrain
   document.querySelectorAll("#pitch .player").forEach(function (card) {
     bench.appendChild(card);
   });
+  
+  // Vider les remplaçants
+  document.querySelectorAll("#subs .player").forEach(function (card) {
+    bench.appendChild(card);
+  });
+  
   clearCaptain();
-  clearSelection();
+  if (typeof clearSelection === "function") clearSelection();
   onLineupChange();
 }
 
@@ -131,11 +197,60 @@ async function loadJson(path) {
   return response.json();
 }
 
+/* ---------- Ajout rapide de joueur (Temporaire) ---------- */
+function initCustomPlayer() {
+  const btn = document.getElementById("add-custom-player-btn");
+  const nameInput = document.getElementById("custom-player-name");
+  const posteSelect = document.getElementById("custom-player-poste");
+  const bench = document.getElementById("bench");
+
+  if (!btn || !nameInput || !posteSelect || !bench) return;
+
+  btn.addEventListener("click", function() {
+    const nom = nameInput.value.trim();
+    if (!nom) return;
+
+    const poste = posteSelect.value;
+    // On génère un ID unique très grand basé sur l'heure pour ne pas écraser les IDs du JSON
+    const newId = Date.now(); 
+
+    const newPlayer = { id: newId, nom: nom, poste: poste };
+    
+    // 1. Créer la carte HTML
+    const card = buildCard(newPlayer);
+    
+    // 2. L'ajouter à la mémoire de l'application
+    App.players.push(newPlayer);
+    App.cards.set(newId, card);
+    
+    // 3. L'ajouter visuellement sur le banc
+    bench.appendChild(card);
+    
+    // 4. Mettre à jour les compteurs et les filtres
+    if (typeof applyFilters === "function") applyFilters();
+    onLineupChange();
+    
+    // 5. Nettoyer le champ pour le prochain joueur
+    nameInput.value = "";
+    showToast(nom + " a été ajouté au banc !");
+  });
+
+  // Permettre de valider avec la touche "Entrée"
+  nameInput.addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      btn.click();
+    }
+  });
+}
+
 /* ---------- Démarrage ---------- */
 async function init() {
   initFormations();
   initDragDrop();
   initStorage();
+  initFilters();
+  initCustomPlayer();
 
   const bench = document.getElementById("bench");
 

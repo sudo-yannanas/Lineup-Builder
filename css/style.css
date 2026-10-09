@@ -251,3 +251,90 @@ body {
   .app-header { padding: 0.8rem 1rem; }
   .bench { max-height: none; }
 }
+
+/* ---------- Filtres (Recherche & Postes) ---------- */
+.filter-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.input-search {
+  padding: 0.55rem 0.7rem;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  width: 100%;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: space-between;
+}
+
+.btn-filter {
+  flex: 1;
+  padding: 0.4rem 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-filter:hover {
+  background: var(--bg-soft);
+  color: var(--text);
+}
+
+.btn-filter.active {
+  background: var(--text-muted);
+  color: #0b1120;
+  border-color: var(--text-muted);
+}
+
+/* Règle pour masquer les joueurs filtrés uniquement s'ils sont sur le banc */
+#bench .player.filtered-out {
+  display: none;
+}
+
+/* ---------- Remplaçants ---------- */
+.subs-wrap {
+  margin-top: 1rem;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.subs-wrap h3 {
+  margin: 0 0 0.8rem 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.subs-zone {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-height: 65px;
+  padding: 0.5rem;
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.subs-zone.drag-over {
+  border-color: var(--accent);
+  background: rgba(34, 197, 94, 0.08);
+}
