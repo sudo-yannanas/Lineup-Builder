@@ -1,0 +1,254 @@
+/* ==========================================================
+   pitch.css – Le terrain et les formations
+   Le terrain est une grille de 60 colonnes (divisible par 1, 2,
+   3, 4, 5, 6) : chaque ligne de joueurs se répartit donc
+   proprement. Le gardien est en bas, l'attaque en haut.
+   Les classes .formation-XXX sont générées en fin de fichier.
+   ========================================================== */
+
+#pitch {
+  --dz-size: clamp(44px, 11vw, 62px);
+
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(60, 1fr);
+  width: 100%;
+  aspect-ratio: 68 / 92;
+  padding: 8% 3%;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  /* Pelouse : bandes de tonte */
+  background: repeating-linear-gradient(
+    180deg,
+    #2f9e44 0%, #2f9e44 10%,
+    #2b8a3e 10%, #2b8a3e 20%
+  );
+}
+
+/* ---------- Lignes du terrain ---------- */
+.pitch-lines {
+  position: absolute;
+  inset: 3%;
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.pitch-lines .halfway {
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.65);
+  transform: translateY(-1px);
+}
+
+.pitch-lines .circle {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 24%;
+  aspect-ratio: 1;
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.pitch-lines .box {
+  position: absolute;
+  left: 22%; right: 22%;
+  height: 16%;
+  border: 2px solid rgba(255, 255, 255, 0.65);
+}
+.pitch-lines .box-top    { top: -2px;    border-top: none; }
+.pitch-lines .box-bottom { bottom: -2px; border-bottom: none; }
+
+/* ---------- Zones de dépôt ---------- */
+.dz {
+  position: relative;
+  z-index: 1;
+  place-self: center;
+  width: var(--dz-size);
+  height: var(--dz-size);
+  border: 2px dashed rgba(255, 255, 255, 0.55);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  transition: transform 0.15s, background 0.15s, border-color 0.15s;
+}
+
+/* Zone occupée : on masque le pointillé */
+.dz:has(.player) {
+  border-color: transparent;
+  background: transparent;
+}
+
+/* Animation au survol pendant un glisser-déposer */
+.dz.drag-over {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.28);
+  transform: scale(1.18);
+  animation: dz-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes dz-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); }
+  50%      { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
+}
+
+/* ---------- Joueur posé sur le terrain ---------- */
+.dz .player {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  gap: 0;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+}
+
+.dz .player .badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding: 0;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  font-size: clamp(0.65rem, 1.8vw, 0.85rem);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+}
+
+.dz .player .name {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 7px;
+  max-width: 120px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  border-radius: 4px;
+  font-size: clamp(0.65rem, 1.8vw, 0.78rem);
+  pointer-events: none;
+}
+
+/* ---------- Capitaine : petit (C) jaune ---------- */
+.player.is-captain::after {
+  content: "C";
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  background: #facc15;
+  color: #111;
+  border: 2px solid #111;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* ==========================================================
+   FORMATIONS (générées : une règle par zone de dépôt)
+   ========================================================== */
+/* 4-3-3 */
+.formation-433 { grid-template-rows: repeat(4, 1fr); }
+.formation-433 .dz[data-slot="0"] { grid-row: 4; grid-column: 1 / 61; }
+.formation-433 .dz[data-slot="1"] { grid-row: 3; grid-column: 1 / 16; }
+.formation-433 .dz[data-slot="2"] { grid-row: 3; grid-column: 16 / 31; }
+.formation-433 .dz[data-slot="3"] { grid-row: 3; grid-column: 31 / 46; }
+.formation-433 .dz[data-slot="4"] { grid-row: 3; grid-column: 46 / 61; }
+.formation-433 .dz[data-slot="5"] { grid-row: 2; grid-column: 1 / 21; }
+.formation-433 .dz[data-slot="6"] { grid-row: 2; grid-column: 21 / 41; }
+.formation-433 .dz[data-slot="7"] { grid-row: 2; grid-column: 41 / 61; }
+.formation-433 .dz[data-slot="8"] { grid-row: 1; grid-column: 1 / 21; }
+.formation-433 .dz[data-slot="9"] { grid-row: 1; grid-column: 21 / 41; }
+.formation-433 .dz[data-slot="10"] { grid-row: 1; grid-column: 41 / 61; }
+
+/* 4-4-2 */
+.formation-442 { grid-template-rows: repeat(4, 1fr); }
+.formation-442 .dz[data-slot="0"] { grid-row: 4; grid-column: 1 / 61; }
+.formation-442 .dz[data-slot="1"] { grid-row: 3; grid-column: 1 / 16; }
+.formation-442 .dz[data-slot="2"] { grid-row: 3; grid-column: 16 / 31; }
+.formation-442 .dz[data-slot="3"] { grid-row: 3; grid-column: 31 / 46; }
+.formation-442 .dz[data-slot="4"] { grid-row: 3; grid-column: 46 / 61; }
+.formation-442 .dz[data-slot="5"] { grid-row: 2; grid-column: 1 / 16; }
+.formation-442 .dz[data-slot="6"] { grid-row: 2; grid-column: 16 / 31; }
+.formation-442 .dz[data-slot="7"] { grid-row: 2; grid-column: 31 / 46; }
+.formation-442 .dz[data-slot="8"] { grid-row: 2; grid-column: 46 / 61; }
+.formation-442 .dz[data-slot="9"] { grid-row: 1; grid-column: 1 / 31; }
+.formation-442 .dz[data-slot="10"] { grid-row: 1; grid-column: 31 / 61; }
+
+/* 4-2-3-1 */
+.formation-4231 { grid-template-rows: repeat(5, 1fr); }
+.formation-4231 .dz[data-slot="0"] { grid-row: 5; grid-column: 1 / 61; }
+.formation-4231 .dz[data-slot="1"] { grid-row: 4; grid-column: 1 / 16; }
+.formation-4231 .dz[data-slot="2"] { grid-row: 4; grid-column: 16 / 31; }
+.formation-4231 .dz[data-slot="3"] { grid-row: 4; grid-column: 31 / 46; }
+.formation-4231 .dz[data-slot="4"] { grid-row: 4; grid-column: 46 / 61; }
+.formation-4231 .dz[data-slot="5"] { grid-row: 3; grid-column: 1 / 31; }
+.formation-4231 .dz[data-slot="6"] { grid-row: 3; grid-column: 31 / 61; }
+.formation-4231 .dz[data-slot="7"] { grid-row: 2; grid-column: 1 / 21; }
+.formation-4231 .dz[data-slot="8"] { grid-row: 2; grid-column: 21 / 41; }
+.formation-4231 .dz[data-slot="9"] { grid-row: 2; grid-column: 41 / 61; }
+.formation-4231 .dz[data-slot="10"] { grid-row: 1; grid-column: 1 / 61; }
+
+/* 4-5-1 */
+.formation-451 { grid-template-rows: repeat(4, 1fr); }
+.formation-451 .dz[data-slot="0"] { grid-row: 4; grid-column: 1 / 61; }
+.formation-451 .dz[data-slot="1"] { grid-row: 3; grid-column: 1 / 16; }
+.formation-451 .dz[data-slot="2"] { grid-row: 3; grid-column: 16 / 31; }
+.formation-451 .dz[data-slot="3"] { grid-row: 3; grid-column: 31 / 46; }
+.formation-451 .dz[data-slot="4"] { grid-row: 3; grid-column: 46 / 61; }
+.formation-451 .dz[data-slot="5"] { grid-row: 2; grid-column: 1 / 13; }
+.formation-451 .dz[data-slot="6"] { grid-row: 2; grid-column: 13 / 25; }
+.formation-451 .dz[data-slot="7"] { grid-row: 2; grid-column: 25 / 37; }
+.formation-451 .dz[data-slot="8"] { grid-row: 2; grid-column: 37 / 49; }
+.formation-451 .dz[data-slot="9"] { grid-row: 2; grid-column: 49 / 61; }
+.formation-451 .dz[data-slot="10"] { grid-row: 1; grid-column: 1 / 61; }
+
+/* 3-5-2 */
+.formation-352 { grid-template-rows: repeat(4, 1fr); }
+.formation-352 .dz[data-slot="0"] { grid-row: 4; grid-column: 1 / 61; }
+.formation-352 .dz[data-slot="1"] { grid-row: 3; grid-column: 1 / 21; }
+.formation-352 .dz[data-slot="2"] { grid-row: 3; grid-column: 21 / 41; }
+.formation-352 .dz[data-slot="3"] { grid-row: 3; grid-column: 41 / 61; }
+.formation-352 .dz[data-slot="4"] { grid-row: 2; grid-column: 1 / 13; }
+.formation-352 .dz[data-slot="5"] { grid-row: 2; grid-column: 13 / 25; }
+.formation-352 .dz[data-slot="6"] { grid-row: 2; grid-column: 25 / 37; }
+.formation-352 .dz[data-slot="7"] { grid-row: 2; grid-column: 37 / 49; }
+.formation-352 .dz[data-slot="8"] { grid-row: 2; grid-column: 49 / 61; }
+.formation-352 .dz[data-slot="9"] { grid-row: 1; grid-column: 1 / 31; }
+.formation-352 .dz[data-slot="10"] { grid-row: 1; grid-column: 31 / 61; }
+
+/* 3-4-3 */
+.formation-343 { grid-template-rows: repeat(4, 1fr); }
+.formation-343 .dz[data-slot="0"] { grid-row: 4; grid-column: 1 / 61; }
+.formation-343 .dz[data-slot="1"] { grid-row: 3; grid-column: 1 / 21; }
+.formation-343 .dz[data-slot="2"] { grid-row: 3; grid-column: 21 / 41; }
+.formation-343 .dz[data-slot="3"] { grid-row: 3; grid-column: 41 / 61; }
+.formation-343 .dz[data-slot="4"] { grid-row: 2; grid-column: 1 / 16; }
+.formation-343 .dz[data-slot="5"] { grid-row: 2; grid-column: 16 / 31; }
+.formation-343 .dz[data-slot="6"] { grid-row: 2; grid-column: 31 / 46; }
+.formation-343 .dz[data-slot="7"] { grid-row: 2; grid-column: 46 / 61; }
+.formation-343 .dz[data-slot="8"] { grid-row: 1; grid-column: 1 / 21; }
+.formation-343 .dz[data-slot="9"] { grid-row: 1; grid-column: 21 / 41; }
+.formation-343 .dz[data-slot="10"] { grid-row: 1; grid-column: 41 / 61; }
+
+/* 5-3-2 */
+.formation-532 { grid-template-rows: repeat(4, 1fr); }
+.formation-532 .dz[data-slot="0"] { grid-row: 4; grid-column: 1 / 61; }
+.formation-532 .dz[data-slot="1"] { grid-row: 3; grid-column: 1 / 13; }
+.formation-532 .dz[data-slot="2"] { grid-row: 3; grid-column: 13 / 25; }
+.formation-532 .dz[data-slot="3"] { grid-row: 3; grid-column: 25 / 37; }
+.formation-532 .dz[data-slot="4"] { grid-row: 3; grid-column: 37 / 49; }
+.formation-532 .dz[data-slot="5"] { grid-row: 3; grid-column: 49 / 61; }
+.formation-532 .dz[data-slot="6"] { grid-row: 2; grid-column: 1 / 21; }
+.formation-532 .dz[data-slot="7"] { grid-row: 2; grid-column: 21 / 41; }
+.formation-532 .dz[data-slot="8"] { grid-row: 2; grid-column: 41 / 61; }
+.formation-532 .dz[data-slot="9"] { grid-row: 1; grid-column: 1 / 31; }
+.formation-532 .dz[data-slot="10"] { grid-row: 1; grid-column: 31 / 61; }
