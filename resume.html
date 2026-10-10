@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Résumé du Match</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background-color: #0f172a;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 20px;
+    }
+    h1, h2 { color: #fff; margin-top: 0; }
+    
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.5fr;
+      gap: 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .info-panel {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 15px;
+    }
+    .form-row {
+      display: flex;
+      gap: 10px;
+    }
+    
+    /* ADAPTATION MOBILE POUR LES FORMULAIRES */
+    @media (max-width: 768px) {
+      .container { grid-template-columns: 1fr; }
+      .info-panel { grid-template-columns: 1fr; } /* Empile les infos globales */
+      .form-row { flex-direction: column; gap: 0; } /* Empile Min et Type */
+    }
+    @media (max-width: 1100px) and (min-width: 769px) {
+      .container { grid-template-columns: 1fr 1fr; }
+      .preview-section { grid-column: 1 / -1; }
+    }
+    
+    .card { background: #1e293b; padding: 20px; border-radius: 10px; border: 1px solid #334155; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; color: #cbd5e1; }
+    input, select {
+      width: 100%; padding: 8px; margin-bottom: 15px; border-radius: 5px;
+      border: 1px solid #475569; background: #0f172a; color: white; box-sizing: border-box;
+    }
+    button {
+      padding: 10px; background: #3b82f6; color: white; border: none;
+      border-radius: 5px; font-weight: bold; cursor: pointer; width: 100%; transition: background 0.2s;
+    }
+    button:hover { background: #2563eb; }
+    .btn-add { background: #22c55e; }
+    .btn-add:hover { background: #16a34a; }
+    .btn-cancel { background: #64748b; margin-top: 10px; display: none; }
+    .btn-export { background: #eab308; color: black; font-size: 1.1em; margin-bottom: 15px; }
+    .btn-actions { display: flex; gap: 5px; margin-left: 10px; }
+    .btn-del { background: #ef4444; width: auto; padding: 5px 10px; margin: 0; }
+    .btn-edit { background: #f59e0b; width: auto; padding: 5px 10px; margin: 0; }
+
+    .timeline { list-style: none; padding: 0; margin: 0; }
+    .timeline-item { display: flex; align-items: center; background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #eab308; }
+    .timeline-item.auto-sep { border-left-color: #cbd5e1; opacity: 0.9; }
+    .time-badge { background: #eab308; color: #0f172a; font-weight: bold; padding: 5px 10px; border-radius: 20px; margin-right: 15px; min-width: 45px; text-align: center; }
+    .event-content { flex-grow: 1; }
+    .event-title { font-weight: bold; color: #fff; font-size: 1.1em; text-transform: uppercase; }
+    .event-desc { color: #cbd5e1; font-size: 0.9em; margin-top: 2px; }
+
+    /* =========================================
+       STYLE DE LA MAQUETTE & ADAPTATION MOBILE
+       ========================================= */
+    .capture-wrapper { 
+      width: 100%; 
+      display: flex; 
+      justify-content: center; 
+      overflow: hidden; 
+      background: #0f172a; 
+      border-radius: 8px; 
+      transition: height 0.3s;
+    }
+    
+    .capture-area {
+      width: 540px; height: 960px;
+      background-image: url('img/fond_resume.jpg'); 
+      background-size: cover; background-position: center;
+      position: relative; box-sizing: border-box; font-family: system-ui, sans-serif; overflow: hidden;
+      transform-origin: top center;
+    }
+
+    /* Adaptabilité automatique pour que l'image rentre sur téléphone */
+    @media (max-width: 600px) {
+      .capture-wrapper { height: 600px; padding-top: 10px; }
+      .capture-area { transform: scale(0.6); } /* Réduit visuellement l'image à 60% */
+    }
+    @media (max-width: 380px) {
+      .capture-wrapper { height: 500px; }
+      .capture-area { transform: scale(0.5); } /* Réduit encore plus sur très petit écran */
+    }
+
+    /* Classe très importante pour garantir que l'export se fait à 100% de la taille */
+    .no-scale { transform: scale(1) !important; }
+    
+    .tpl-header { position: absolute; top: 40px; left: 0; width: 100%; text-align: center; z-index: 10; padding: 0 20px; box-sizing: border-box;}
+    .tpl-match-title { color: white; font-weight: 900; font-size: 1.8em; text-transform: uppercase; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); line-height: 1.1; margin-bottom: 5px; }
+    .tpl-match-time { color: white; font-weight: bold; font-size: 1.2em; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
+
+    .tpl-footer { position: absolute; bottom: 90px; left: 0; width: 100%; z-index: 10; padding: 0 25px; box-sizing: border-box; }
+    .tpl-footer-container { display: flex; justify-content: space-between; gap: 15px; }
+    .tpl-box { background: rgba(15, 23, 42, 0.95); border: 2px solid #eab308; border-radius: 8px; padding: 12px 10px; flex: 1; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.6); }
+    .tpl-box-title { color: #eab308; font-weight: bold; font-size: 0.85em; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px;}
+    .tpl-box-value { color: white; font-weight: 900; font-size: 1.3em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    #template-timeline { 
+      position: absolute; top: 150px; left: 40px; right: 40px; bottom: 140px; 
+      display: flex; flex-direction: column; justify-content: center; 
+    }
+
+    #timeline-events-wrapper {
+      display: flex; flex-direction: column; gap: 20px; position: relative; width: 100%;
+    }
+    
+    #timeline-events-wrapper::before {
+      content: ''; position: absolute; top: 10px; bottom: 10px; left: 69px;
+      width: 4px; background: rgba(234, 179, 8, 0.6); z-index: 0; border-radius: 2px;
+    }
+
+    .tpl-item { display: flex; align-items: center; position: relative; z-index: 1; }
+    .tpl-time { background: #0f172a; color: white; font-weight: bold; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 1.1em; border: 3px solid #eab308; flex-shrink: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.7); text-align: center; line-height: 1;}
+    .tpl-icon { font-size: 1.8em; margin-right: 12px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); width: 35px; text-align: center; flex-shrink: 0; }
+    .tpl-content { flex-grow: 1; background: rgba(15, 23, 42, 0.65); padding: 5px 15px; border-radius: 8px; }
+    .tpl-title { font-weight: 900; font-size: 1.3em; text-transform: uppercase; color: #eab308; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); margin-bottom: 2px; line-height: 1.1; }
+    .tpl-desc { font-size: 1.05em; color: white; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
+    
+    .tpl-separator { 
+      display: flex; align-items: center; width: 100%; margin: 5px 0;
+      color: white; font-size: 0.9em; font-weight: bold; text-transform: uppercase;
+      letter-spacing: 2px; position: relative; z-index: 2;
+    }
+    .tpl-separator::before, .tpl-separator::after {
+      content: ''; flex: 1; height: 2px; background: rgba(255, 255, 255, 0.8);
+    }
+    .tpl-separator-text {
+      background: #0f172a; 
+      padding: 4px 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.4);
+      margin: 0 10px; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    .tpl-special-add { font-size: 0.85em; color: #eab308; font-weight: bold; margin-left: 5px; }
+
+  </style>
+</head>
+<body>
+
+  <div style="max-width: 1400px; margin: 0 auto 20px auto;">
+    <a href="index.html" style="color: #cbd5e1; text-decoration: none;">&larr; Retour à l'accueil</a>
+    <h1 style="margin-top: 10px;">📝 Résumé du Match</h1>
+  </div>
+
+  <div class="container">
+    
+    <!-- INFOS GLOBALES -->
+    <div class="card info-panel">
+      <div>
+        <label>Intitulé du match</label>
+        <select id="in-titre-select">
+          <option value="Championnat">Championnat</option>
+          <option value="Challenge 35" selected>Challenge 35</option>
+          <option value="Amical">Amical</option>
+          <option value="Autre">Autre (préciser)...</option>
+        </select>
+        <input type="text" id="in-titre-custom" placeholder="Saisir l'intitulé..." style="display: none; margin-top: 8px;">
+      </div>
+      <div>
+        <label>Adversaire</label>
+        <input type="text" id="in-adversaire" placeholder="Nom complet">
+      </div>
+      <div>
+        <label>Abréviation Adv.</label>
+        <input type="text" id="in-adv-abrege" placeholder="Ex: CHA" maxlength="4">
+      </div>
+      <div>
+        <label style="color: #ef4444;">Buts Adversaire</label>
+        <input type="number" id="in-score-adv" value="0" min="0">
+      </div>
+      <div>
+        <label>Heure de début</label>
+        <input type="text" id="in-heure" placeholder="Ex: 15H00">
+      </div>
+      <div>
+        <label>⏱️ Tps add. Mi-temps</label>
+        <input type="text" id="in-add-mt1" placeholder="Ex: +2">
+      </div>
+      <div>
+        <label>🏁 Tps add. Fin match</label>
+        <input type="text" id="in-add-mt2" placeholder="Ex: +4">
+      </div>
+      <div>
+        <label>🏆 Homme du match</label>
+        <input type="text" id="in-hdm" placeholder="Nom du joueur">
+      </div>
+    </div>
+
+    <!-- FORMULAIRE ÉVÉNEMENTS -->
+    <div class="card">
+      <h2 id="form-title">Ajouter une action de jeu</h2>
+      <form id="event-form">
+        <!-- Utilisation de la classe form-row pour l'adaptation mobile -->
+        <div class="form-row">
+          <div style="flex: 1;" id="div-minute">
+            <label>Min (ex: 45+2)</label>
+            <input type="text" id="minute" placeholder="Ex: 15">
+          </div>
+          <div style="flex: 2;">
+            <label>Type d'événement</label>
+            <select id="type-event">
+              <option value="but">⚽ But</option>
+              <option value="remplacement">🔄 Remplacement</option>
+              <option value="carton-jaune">🟨 Carton Jaune</option>
+              <option value="carton-rouge">🟥 Carton Rouge</option>
+              <option value="pause">⏸️ Pause fraîcheur</option>
+              <option value="info">ℹ️ Autre action</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="fields-but">
+          <label>Buteur</label>
+          <input type="text" id="buteur" placeholder="Nom du buteur">
+          <label>Passeur décisif (optionnel)</label>
+          <input type="text" id="passeur" placeholder="Nom du passeur">
+        </div>
+
+        <div id="fields-remplacement" style="display: none;">
+          <label>Entrant (IN)</label>
+          <input type="text" id="entrant" placeholder="Nom du joueur entrant">
+          <label>Sortant (OUT)</label>
+          <input type="text" id="sortant" placeholder="Nom du joueur sortant">
+        </div>
+
+        <div id="fields-info" style="display: none;">
+          <label>Description (ex: nom du joueur pour carton)</label>
+          <input type="text" id="info-desc" placeholder="Détail de l'action...">
+        </div>
+
+        <button type="submit" id="submit-btn" class="btn-add">Ajouter à la liste</button>
+        <button type="button" id="cancel-btn" class="btn-cancel">Annuler</button>
+      </form>
+    </div>
+
+    <!-- LISTE ÉVÉNEMENTS -->
+    <div class="card">
+      <h2 style="margin-top: 0;">Liste chronologique</h2>
+      <ul class="timeline" id="timeline-list"></ul>
+    </div>
+
+    <!-- APERÇU -->
+    <div class="card preview-section">
+      <button id="btn-export" class="btn-export">📸 Télécharger l'image</button>
+      
+      <div class="capture-wrapper">
+        <div id="capture-area" class="capture-area">
+          
+          <div class="tpl-header">
+            <div id="out-titre" class="tpl-match-title">CHALLENGE 35</div>
+            <div id="out-heure" class="tpl-match-time" style="display:none;"></div>
+          </div>
+
+          <div id="template-timeline">
+            <div id="timeline-events-wrapper"></div>
+          </div>
+
+          <div class="tpl-footer" id="out-footer">
+            <div class="tpl-footer-container">
+                <div class="tpl-box" id="out-hdm-box">
+                    <div class="tpl-box-title">🏆 Homme du match</div>
+                    <div class="tpl-box-value" id="out-hdm-name">-</div>
+                </div>
+                <div class="tpl-box" id="out-score-box">
+                    <div class="tpl-box-title">⚽ Score Final</div>
+                    <div class="tpl-box-value" id="out-score-text">USD 0 - 0 ADV</div>
+                </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      
+    </div>
+
+  </div>
+
+  <script>
+    // --- FONCTION DE FORMATAGE DES PRÉNOMS ---
+    function formatName(nameStr) {
+      if (!nameStr) return "";
+      return nameStr.trim().split(/\s+/).map(word => {
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      }).join(' ');
+    }
+
+    // --- GESTION DE L'EN-TÊTE ET DES INFOS GLOBALES ---
+    const inTitreSelect = document.getElementById('in-titre-select');
+    const inTitreCustom = document.getElementById('in-titre-custom');
+    const inAddMt1 = document.getElementById('in-add-mt1');
+    const inAddMt2 = document.getElementById('in-add-mt2');
+    const inScoreAdv = document.getElementById('in-score-adv');
+    const inAdv = document.getElementById('in-adversaire');
+    const inAdvAbrege = document.getElementById('in-adv-abrege');
+    const inHdm = document.getElementById('in-hdm');
+
+    function updateGlobalInfos() {
+      // Titre & Adversaire
+      let titre = inTitreSelect.value;
+      if (titre === 'Autre') {
+        inTitreCustom.style.display = 'block';
+        titre = inTitreCustom.value.trim();
+      } else {
+        inTitreCustom.style.display = 'none';
+      }
+
+      const adv = inAdv.value.trim();
+      let textTitre = titre || "RÉSUMÉ DU MATCH";
+      if (adv) textTitre += " - " + adv;
+      document.getElementById('out-titre').textContent = textTitre;
+      
+      // Heure
+      const heure = document.getElementById('in-heure').value.trim();
+      const outHeure = document.getElementById('out-heure');
+      if(heure) {
+        outHeure.textContent = `⏱️ DÉBUT DU MATCH : ${heure}`;
+        outHeure.style.display = "block";
+      } else {
+        outHeure.style.display = "none";
+      }
+      
+      // Homme du match
+      const hdm = formatName(inHdm.value);
+      const outHdmName = document.getElementById('out-hdm-name');
+      outHdmName.textContent = hdm || "-";
+      
+      renderTimelines();
+    }
+
+    inTitreSelect.addEventListener('change', updateGlobalInfos);
+    inTitreCustom.addEventListener('input', updateGlobalInfos);
+    inAdv.addEventListener('input', updateGlobalInfos);
+    inAdvAbrege.addEventListener('input', updateGlobalInfos);
+    document.getElementById('in-heure').addEventListener('input', updateGlobalInfos);
+    inHdm.addEventListener('input', updateGlobalInfos);
+    inAddMt1.addEventListener('input', updateGlobalInfos);
+    inAddMt2.addEventListener('input', updateGlobalInfos);
+    inScoreAdv.addEventListener('input', updateGlobalInfos);
+    
+    // --- GESTION DES ÉVÉNEMENTS ---
+    let events = [];
+    let nextId = 1;
+    let editingId = null;
+
+    const typeSelect = document.getElementById('type-event');
+    const fieldsBut = document.getElementById('fields-but');
+    const fieldsRemplacement = document.getElementById('fields-remplacement');
+    const fieldsInfo = document.getElementById('fields-info');
+    const minuteInput = document.getElementById('minute');
+    
+    const form = document.getElementById('event-form');
+    const timelineList = document.getElementById('timeline-list');
+    const templateTimeline = document.getElementById('timeline-events-wrapper');
+    
+    function updateFormFields() {
+      fieldsBut.style.display = 'none';
+      fieldsRemplacement.style.display = 'none';
+      fieldsInfo.style.display = 'none';
+
+      const v = typeSelect.value;
+      if (v === 'but') fieldsBut.style.display = 'block';
+      else if (v === 'remplacement') fieldsRemplacement.style.display = 'block';
+      else if (v === 'info' || v === 'pause' || v === 'carton-jaune' || v === 'carton-rouge') {
+        fieldsInfo.style.display = 'block'; 
+      }
+    }
+    typeSelect.addEventListener('change', updateFormFields);
+
+    function parseMinuteForSort(minuteStr) {
+      if (!minuteStr) return 0;
+      const str = minuteStr.toString().replace("'", "");
+      const parts = str.split('+');
+      const base = parseInt(parts[0]) || 0;
+      const extra = parts[1] ? parseInt(parts[1]) * 0.01 : 0;
+      return base + extra;
+    }
+
+    function formatBadgeText(minuteStr) {
+      if (!minuteStr) return "";
+      const str = minuteStr.toString().replace("'", "").trim();
+      if (str.includes('+')) {
+        const parts = str.split('+');
+        return `${parts[0]}'<br><span style="font-size: 0.7em;">+${parts[1]}</span>`;
+      }
+      return `${str}'`;
+    }
+
+    function renderTimelines() {
+      timelineList.innerHTML = '';
+      templateTimeline.innerHTML = ''; 
+      
+      // Calcul du Score
+      let butsEquipe = 0;
+      events.forEach(ev => { if(ev.type === 'but') butsEquipe++; });
+      let butsAdv = inScoreAdv.value || 0;
+      
+      let nomEquipeLocale = "USD";
+      let nomAdvAbrege = inAdvAbrege.value.trim().toUpperCase() || inAdv.value.trim().substring(0, 3).toUpperCase() || "ADV";
+      document.getElementById('out-score-text').textContent = `${nomEquipeLocale} ${butsEquipe} - ${butsAdv} ${nomAdvAbrege}`;
+
+      // Tri et insertion des séparateurs auto
+      events.sort((a, b) => parseMinuteForSort(a.minute) - parseMinuteForSort(b.minute));
+
+      let finalRenderList = [];
+      let mtAdded = false;
+      const mt1Val = inAddMt1.value.trim();
+      const mt2Val = inAddMt2.value.trim();
+
+      events.forEach(function(ev) {
+        const baseMin = parseInt(ev.minute.toString().replace("'", "").split('+')[0]) || 0;
+        if (baseMin > 45 && !mtAdded) {
+          finalRenderList.push({ isAuto: true, title: 'MI-TEMPS', tempsAdd: mt1Val });
+          mtAdded = true;
+        }
+        finalRenderList.push(ev);
+      });
+
+      if (!mtAdded) {
+        finalRenderList.push({ isAuto: true, title: 'MI-TEMPS', tempsAdd: mt1Val });
+      }
+      finalRenderList.push({ isAuto: true, title: 'FIN DU MATCH', tempsAdd: mt2Val });
+
+      // Rendu HTML
+      finalRenderList.forEach(function(ev) {
+        
+        if (ev.isAuto || ev.type === 'pause') {
+          let dispTitle = ev.isAuto ? ev.title : (ev.infoDesc || "PAUSE FRAÎCHEUR").toUpperCase();
+          let tempsAdd = ev.isAuto ? ev.tempsAdd : "";
+          let badgeText = ev.isAuto ? "--" : formatBadgeText(ev.minute);
+          
+          let actionsHtml = ev.isAuto ? '' : `
+            <div class="btn-actions">
+              <button class="btn-edit" onclick="editEvent(${ev.id})">✎</button>
+              <button class="btn-del" onclick="deleteEvent(${ev.id})">✗</button>
+            </div>
+          `;
+
+          const liList = document.createElement('li');
+          liList.className = 'timeline-item auto-sep';
+          liList.innerHTML = `
+            <div class="time-badge" style="background:#cbd5e1; color:black;">${badgeText}</div>
+            <div class="event-content">
+              <div class="event-title" style="color:#cbd5e1">${dispTitle}</div>
+              ${tempsAdd ? `<div class="event-desc" style="color:#eab308">Temps additionnel : ${tempsAdd}</div>` : ''}
+            </div>
+            ${actionsHtml}
+            ${ev.isAuto ? `<div style="font-size: 0.8em; color: #64748b; font-style: italic;">(Auto)</div>` : ''}
+          `;
+          timelineList.appendChild(liList);
+
+          const divTpl = document.createElement('div');
+          divTpl.className = `tpl-separator`;
+          const addHtml = tempsAdd ? `<span class="tpl-special-add">(+${tempsAdd}')</span>` : '';
+          const minutePrefix = (!ev.isAuto && ev.minute) ? `${ev.minute}' - ` : '';
+          
+          divTpl.innerHTML = `<span class="tpl-separator-text">${minutePrefix}${dispTitle} ${addHtml}</span>`;
+          templateTimeline.appendChild(divTpl);
+          return;
+        }
+
+        let title = ''; let desc = ''; let icon = '';
+        if (ev.type === 'but') {
+          title = `BUT DE ${ev.buteur}`;
+          if (ev.passeur) desc = `(passe de ${ev.passeur})`;
+          icon = '⚽';
+        } else if (ev.type === 'remplacement') {
+          title = `REMPLACEMENT`;
+          desc = `${ev.entrant} (IN) ↔ ${ev.sortant} (OUT)`;
+          icon = '🔄';
+        } else if (ev.type === 'carton-jaune') {
+          title = `CARTON JAUNE`; desc = ev.infoDesc; icon = '🟨';
+        } else if (ev.type === 'carton-rouge') {
+          title = `CARTON ROUGE`; desc = ev.infoDesc; icon = '🟥';
+        } else {
+          title = (ev.infoDesc || "Action").toUpperCase(); icon = 'ℹ️';
+        }
+
+        const liList = document.createElement('li');
+        liList.className = 'timeline-item';
+        liList.innerHTML = `
+          <div class="time-badge">${formatBadgeText(ev.minute)}</div>
+          <div class="event-content">
+            <div class="event-title">${icon} ${title}</div>
+            ${desc ? `<div class="event-desc">${desc}</div>` : ''}
+          </div>
+          <div class="btn-actions">
+            <button class="btn-edit" onclick="editEvent(${ev.id})">✎</button>
+            <button class="btn-del" onclick="deleteEvent(${ev.id})">✗</button>
+          </div>
+        `;
+        timelineList.appendChild(liList);
+
+        const divTpl = document.createElement('div');
+        divTpl.className = `tpl-item`;
+        divTpl.innerHTML = `
+          <div class="tpl-icon">${icon}</div>
+          <div class="tpl-time">${formatBadgeText(ev.minute)}</div>
+          <div class="tpl-content">
+            <div class="tpl-title">${title}</div>
+            ${desc ? `<div class="tpl-desc">${desc}</div>` : ''}
+          </div>
+        `;
+        templateTimeline.appendChild(divTpl); 
+      });
+    }
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const vType = typeSelect.value;
+      let vButeur = document.getElementById('buteur').value;
+      let vPasseur = document.getElementById('passeur').value;
+      let vEntrant = document.getElementById('entrant').value;
+      let vSortant = document.getElementById('sortant').value;
+      let vInfoDesc = document.getElementById('info-desc').value;
+
+      if (vType === 'but') {
+        vButeur = formatName(vButeur);
+        vPasseur = formatName(vPasseur);
+      } else if (vType === 'remplacement') {
+        vEntrant = formatName(vEntrant);
+        vSortant = formatName(vSortant);
+      } else if (vType === 'carton-jaune' || vType === 'carton-rouge') {
+        vInfoDesc = formatName(vInfoDesc);
+      }
+
+      const newEvent = {
+        id: editingId !== null ? editingId : nextId++,
+        minute: minuteInput.value,
+        type: vType,
+        buteur: vButeur,
+        passeur: vPasseur,
+        entrant: vEntrant,
+        sortant: vSortant,
+        infoDesc: vInfoDesc
+      };
+
+      if (editingId !== null) {
+        const index = events.findIndex(ev => ev.id === editingId);
+        if (index > -1) events[index] = newEvent;
+        cancelEditMode();
+      } else {
+        events.push(newEvent);
+      }
+
+      updateGlobalInfos();
+      
+      if (editingId === null) {
+        form.reset();
+        updateFormFields();
+        minuteInput.focus();
+      }
+    });
+
+    window.editEvent = function(id) {
+      const ev = events.find(e => e.id === id);
+      if (!ev) return;
+      editingId = id;
+      
+      typeSelect.value = ev.type;
+      updateFormFields();
+      minuteInput.value = ev.minute || "";
+      document.getElementById('buteur').value = ev.buteur || "";
+      document.getElementById('passeur').value = ev.passeur || "";
+      document.getElementById('entrant').value = ev.entrant || "";
+      document.getElementById('sortant').value = ev.sortant || "";
+      document.getElementById('info-desc').value = ev.infoDesc || "";
+
+      document.getElementById('form-title').textContent = "Modifier l'événement";
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.textContent = "Valider"; submitBtn.style.background = "#f59e0b";
+      document.getElementById('cancel-btn').style.display = "block";
+    };
+
+    window.deleteEvent = function(id) {
+      if(confirm("Supprimer cet événement ?")) {
+        events = events.filter(e => e.id !== id);
+        if (editingId === id) cancelEditMode();
+        updateGlobalInfos();
+      }
+    };
+
+    function cancelEditMode() {
+      editingId = null; form.reset(); updateFormFields();
+      document.getElementById('form-title').textContent = "Ajouter une action de jeu";
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.textContent = "Ajouter à la liste"; submitBtn.style.background = "#22c55e";
+      document.getElementById('cancel-btn').style.display = "none";
+    }
+    document.getElementById('cancel-btn').addEventListener('click', cancelEditMode);
+
+    // Initialisation
+    updateGlobalInfos();
+
+    // Export Image avec désactivation temporaire du Zoom
+    document.getElementById('btn-export').addEventListener('click', function() {
+      const captureArea = document.getElementById('capture-area');
+      const originalText = this.innerHTML;
+      this.innerHTML = "⏳ Génération en cours..."; 
+      this.style.opacity = "0.7";
+
+      // IMPORTANT : Enlève le zoom mobile pour que l'image soit prise en HD (540x960)
+      captureArea.classList.add('no-scale');
+
+      html2canvas(captureArea, { scale: 2, useCORS: true }).then(canvas => {
+        // Remet le zoom mobile immédiatement après la capture
+        captureArea.classList.remove('no-scale');
+        
+        const link = document.createElement('a');
+        link.download = 'Resume_Match.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        
+        this.innerHTML = originalText; 
+        this.style.opacity = "1";
+      });
+    });
+  </script>
+</body>
+</html>
