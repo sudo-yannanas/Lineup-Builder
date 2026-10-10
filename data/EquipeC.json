@@ -17,5 +17,6 @@
   { "id": 16, "nom": "Maxence B", "poste": "DEF" },
   { "id": 17, "nom": "Alex V", "poste": "ATT" },
   { "id": 18, "nom": "Antoine", "poste": "DEF" },
-  { "id": 19, "nom": "Nicolas", "poste": "GB" }
+  { "id": 19, "nom": "Nicolas", "poste": "GB" },
+  { "id": 20, "nom": "Anthony", "poste": "MIL"}
 ]
