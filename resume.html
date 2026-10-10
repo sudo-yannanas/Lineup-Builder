@@ -610,30 +610,47 @@
     }
     document.getElementById('cancel-btn').addEventListener('click', cancelEditMode);
 
-    // Initialisation
-    updateGlobalInfos();
-
-    // Export Image avec désactivation temporaire du Zoom
+// Export Image avec Menu de Partage Natif (Web Share API)
     document.getElementById('btn-export').addEventListener('click', function() {
       const captureArea = document.getElementById('capture-area');
       const originalText = this.innerHTML;
       this.innerHTML = "⏳ Génération en cours..."; 
       this.style.opacity = "0.7";
 
-      // IMPORTANT : Enlève le zoom mobile pour que l'image soit prise en HD (540x960)
+      // Désactive le zoom mobile pour la capture HD
       captureArea.classList.add('no-scale');
 
       html2canvas(captureArea, { scale: 2, useCORS: true }).then(canvas => {
-        // Remet le zoom mobile immédiatement après la capture
+        // Remet le zoom mobile
         captureArea.classList.remove('no-scale');
         
-        const link = document.createElement('a');
-        link.download = 'Resume_Match.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        
-        this.innerHTML = originalText; 
-        this.style.opacity = "1";
+        // Convertir le canvas en fichier image réel (Blob)
+        canvas.toBlob(async function(blob) {
+          const file = new File([blob], 'Resume_Match.png', { type: 'image/png' });
+
+          // Si le téléphone supporte le menu de partage natif avec des fichiers
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                files: [file],
+                title: 'Résumé du Match',
+              });
+            } catch (err) {
+              console.log('Partage annulé ou échoué', err);
+            }
+          } else {
+            // Solution de secours pour PC ou vieux navigateurs (téléchargement classique)
+            const link = document.createElement('a');
+            link.download = 'Resume_Match.png';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+          }
+
+          // Remet le bouton à la normale
+          document.getElementById('btn-export').innerHTML = originalText; 
+          document.getElementById('btn-export').style.opacity = "1";
+          
+        }, 'image/png');
       });
     });
   </script>
