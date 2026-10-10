@@ -1,0 +1,22 @@
+[
+  { "id": 1, "nom": "Adelyn", "poste": "ATT" },
+  { "id": 2, "nom": "Yanis.M", "poste": "ATT" },
+  { "id": 3, "nom": "Yanis.D", "poste": "ATT" },
+  { "id": 4, "nom": "Eliott", "poste": "ATT" },
+  { "id": 5, "nom": "Val", "poste": "MIL" },
+  { "id": 6, "nom": "Timéo", "poste": "MIL" },
+  { "id": 7, "nom": "Gabriel", "poste": "MIL" },
+  { "id": 8, "nom": "Noah", "poste": "MIL" },
+  { "id": 9, "nom": "Morgan", "poste": "MIL" },
+  { "id": 10, "nom": "Mael", "poste": "DEF" },
+  { "id": 11, "nom": "Pl", "poste": "DEF" },
+  { "id": 12, "nom": "Amael", "poste": "DEF" },
+  { "id": 13, "nom": "Théo", "poste": "DEF" },
+  { "id": 14, "nom": "Ethan", "poste": "DEF" },
+  { "id": 15, "nom": "Marvyn", "poste": "DEF" },
+  { "id": 16, "nom": "Milan", "poste": "DEF" },
+  { "id": 17, "nom": "Enzo", "poste": "DEF" },
+  { "id": 18, "nom": "Lucas", "poste": "DEF" },
+  { "id": 19, "nom": "Elyes", "poste": "GB" },
+  { "id": 20, "nom": "Kaelig", "poste": "GB" }
+]

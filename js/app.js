@@ -125,12 +125,37 @@ function initFilters() {
   }
 }
 
+/* ---------- Tri automatique du banc ---------- */
+function sortBench() {
+  const bench = document.getElementById("bench");
+  if (!bench) return;
+  
+  // On récupère uniquement les cartes des joueurs présents sur le banc
+  const cards = Array.from(bench.querySelectorAll(".player"));
+  const ordrePostes = { "GB": 1, "DEF": 2, "MIL": 3, "ATT": 4 };
+  
+  // On les trie selon le poste
+  cards.sort(function(a, b) {
+    const oA = ordrePostes[a.dataset.poste] || 99;
+    const oB = ordrePostes[b.dataset.poste] || 99;
+    return oA - oB;
+  });
+  
+  // On les replace proprement dans le banc dans le bon ordre
+  cards.forEach(function(card) {
+    bench.appendChild(card);
+  });
+}
+
 /* ---------- Mises à jour après chaque changement ---------- */
 function onLineupChange() {
   // Un joueur renvoyé sur le banc perd le brassard
   document.querySelectorAll("#bench .player.is-captain").forEach(function (c) {
     c.classList.remove("is-captain");
   });
+
+  // NOUVEAU : On retrie le banc immédiatement
+  sortBench();
 
   const n = document.querySelectorAll("#pitch .player").length;
   const count = document.getElementById("count");
@@ -276,19 +301,29 @@ async function init() {
   });
 
   // Joueurs
+// Joueurs
   try {
-    App.players = await loadJson("data/players.json");
+    const fichier = typeof FICHIER_JOUEURS !== 'undefined' ? FICHIER_JOUEURS : "players.json";
+    App.players = await loadJson("data/" + fichier);
   } catch (err) {
     console.error(err);
     const msg = document.createElement("p");
     msg.className = "bench-message";
-    msg.textContent =
-      "Impossible de charger data/players.json. Ouvrez le site via un serveur " +
-      "local (ex. « python3 -m http.server ») et non en double-cliquant sur index.html.";
+    msg.textContent = "Impossible de charger les joueurs.";
     bench.appendChild(msg);
     return;
   }
 
+  // NOUVEAU : Tri des joueurs par poste (GB > DEF > MIL > ATT)
+  const ordrePostes = { "GB": 1, "DEF": 2, "MIL": 3, "ATT": 4 };
+  
+  App.players.sort(function(a, b) {
+    const ordreA = ordrePostes[a.poste] || 99;
+    const ordreB = ordrePostes[b.poste] || 99;
+    return ordreA - ordreB;
+  });
+
+  // Création des cartes
   App.players.forEach(function (p) {
     const card = buildCard(p);
     App.cards.set(Number(p.id), card);
@@ -297,7 +332,8 @@ async function init() {
 
   // Compositions types (facultatif)
   try {
-    App.presets = await loadJson("data/presets.json");
+    const fichierPresets = typeof FICHIER_PRESETS !== 'undefined' ? FICHIER_PRESETS : "presets.json";
+    App.presets = await loadJson("data/" + fichierPresets);
     initPresets();
   } catch (err) {
     console.warn("presets.json non chargé :", err);
