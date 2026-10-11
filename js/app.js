@@ -28,11 +28,20 @@ function buildCard(player) {
   card.draggable = true;
   card.dataset.id = player.id;
   card.dataset.poste = player.poste;
-  card.title = "Double-clic ou clic droit : capitaine";
+  card.title = "Cliquez pour modifier (Capitaine / Numéro)";
 
   const badge = document.createElement("span");
   badge.className = "badge";
-  badge.textContent = player.poste;
+  badge.textContent = "-";
+  badge.dataset.customNum = "false";
+  
+  // NOUVEAU : On écoute le clic sur toute la carte
+  card.addEventListener('click', function(e) {
+    // On n'ouvre le menu que si le joueur est sur le terrain (dans une "dz")
+    if (this.closest('.dz')) {
+      openPlayerMenu(this);
+    }
+  });
 
   const name = document.createElement("span");
   name.className = "name";
@@ -154,8 +163,11 @@ function onLineupChange() {
     c.classList.remove("is-captain");
   });
 
-  // NOUVEAU : On retrie le banc immédiatement
+  // On retrie le banc immédiatement
   sortBench();
+
+  // On met à jour les numéros de maillots !
+  autoAssignNumbers();
 
   const n = document.querySelectorAll("#pitch .player").length;
   const count = document.getElementById("count");
@@ -276,6 +288,10 @@ async function init() {
   initStorage();
   initFilters();
   initCustomPlayer();
+  initExportCompo();
+
+  // NOUVEAU : Crée le menu caché dans la page au démarrage
+  createPlayerMenuHTML();
 
   const bench = document.getElementById("bench");
 
@@ -284,24 +300,7 @@ async function init() {
     showToast("Terrain vidé");
   });
 
-  // Capitaine : double-clic ou clic droit sur une carte
-  document.addEventListener("dblclick", function (e) {
-    const card = e.target instanceof Element ? e.target.closest(".player") : null;
-    if (card) {
-      e.preventDefault();
-      toggleCaptain(card);
-    }
-  });
-  document.addEventListener("contextmenu", function (e) {
-    const card = e.target instanceof Element ? e.target.closest(".player") : null;
-    if (card) {
-      e.preventDefault();
-      toggleCaptain(card);
-    }
-  });
-
   // Joueurs
-// Joueurs
   try {
     const fichier = typeof FICHIER_JOUEURS !== 'undefined' ? FICHIER_JOUEURS : "players.json";
     App.players = await loadJson("data/" + fichier);
@@ -314,7 +313,7 @@ async function init() {
     return;
   }
 
-  // NOUVEAU : Tri des joueurs par poste (GB > DEF > MIL > ATT)
+  // Tri des joueurs par poste (GB > DEF > MIL > ATT)
   const ordrePostes = { "GB": 1, "DEF": 2, "MIL": 3, "ATT": 4 };
   
   App.players.sort(function(a, b) {
@@ -342,6 +341,187 @@ async function init() {
   // Lien partagé ? Sinon terrain vide en 4-3-3
   if (!parseUrlParams()) setFormation(DEFAULT_FORMATION);
   onLineupChange();
+}
+
+// ==========================================
+// AUTO-NUMÉROTATION DES JOUEURS
+// ==========================================
+function autoAssignNumbers() {
+  const logicalNumbers = {
+    0: 1,   1: 2,   2: 4,   3: 5,   4: 3, 
+    5: 6,   6: 8,   7: 10,  8: 7,   9: 9, 10: 11
+  };
+
+  // 1. Terrain
+  const dropZones = document.querySelectorAll('.dz');
+  dropZones.forEach(dz => {
+    const slotIndex = parseInt(dz.getAttribute('data-slot'));
+    const player = dz.querySelector('.player');
+    
+    if (player) {
+      const badge = player.querySelector('.badge');
+      if (badge && badge.dataset.customNum !== "true") {
+        badge.textContent = logicalNumbers[slotIndex] || "-"; 
+      }
+    }
+  });
+
+  // 2. Remplaçants (Zone sous le terrain, à partir de 12)
+  let subNumber = 12;
+  const subsPlayers = document.querySelectorAll('#subs .player');
+  subsPlayers.forEach(player => {
+    const badge = player.querySelector('.badge');
+    if (badge && badge.dataset.customNum !== "true") {
+      badge.textContent = subNumber;
+      subNumber++;
+    }
+  });
+
+  // 3. Banc de touche principal (Réinitialisation avec un tiret)
+  const benchPlayers = document.querySelectorAll('#bench .player');
+  benchPlayers.forEach(player => {
+    const badge = player.querySelector('.badge');
+    if (badge && badge.dataset.customNum !== "true") {
+      badge.textContent = "-";
+    }
+  });
+}
+
+/* ---------- Export de la composition (Image) ---------- */
+function initExportCompo() {
+  const btnExport = document.getElementById('btn-export-compo');
+  const captureArea = document.getElementById('capture-terrain');
+  
+  // SÉCURITÉ : Si on est sur une page sans le bouton ou sans terrain, on ne fait rien !
+  if (!btnExport || !captureArea) return; 
+
+  btnExport.addEventListener('click', function() {
+    const originalText = this.innerHTML;
+    this.innerHTML = "⏳ Génération en cours..."; 
+    this.style.opacity = "0.7";
+
+    html2canvas(captureArea, { scale: 2, useCORS: true, backgroundColor: null }).then(canvas => {
+      canvas.toBlob(async function(blob) {
+        const file = new File([blob], 'Composition.png', { type: 'image/png' });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: 'Notre Composition' });
+          } catch (err) {
+            console.log('Partage annulé ou échoué', err);
+          }
+        } else {
+          // Secours pour PC
+          const link = document.createElement('a');
+          link.download = 'Composition.png';
+          link.href = URL.createObjectURL(blob);
+          link.click();
+        }
+
+        // Restaure le bouton
+        btnExport.innerHTML = originalText; 
+        btnExport.style.opacity = "1";
+        
+      }, 'image/png');
+    });
+  });
+}
+
+// ==========================================
+// MENU JOUEUR (MODALE CAPITAINE / NUMÉRO)
+// ==========================================
+let activePlayerCard = null;
+
+function createPlayerMenuHTML() {
+  if (document.getElementById('player-modal')) return;
+  
+  const modalHTML = `
+    <div id="player-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.8); z-index:9999; justify-content:center; align-items:center;">
+      <div style="background:#1e293b; padding:20px; border-radius:10px; border:1px solid #334155; width:90%; max-width:300px; color:white; text-align:center; font-family:system-ui,sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+        
+        <h3 id="modal-player-name" style="margin-top:0; color:#eab308; font-size: 1.3em;">Nom</h3>
+        
+        <!-- Boutons d'action principaux -->
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
+          <button id="btn-modal-captain" style="padding:12px; border:none; border-radius:5px; font-weight:bold; cursor:pointer; color:white; font-size:1em; transition:0.2s;">© Mettre Capitaine</button>
+          <button id="btn-modal-close" style="padding:10px; border:none; border-radius:5px; cursor:pointer; background:transparent; color:#94a3b8; text-decoration:underline;">Fermer le menu</button>
+        </div>
+
+        <hr style="border:0; border-top:1px solid #334155; margin:20px 0;">
+
+        <!-- Zone de saisie du numéro tout en bas -->
+        <div style="text-align:left;">
+          <label style="display:block; margin-bottom:2px; color:#cbd5e1; font-weight:bold; font-size:0.9em;">Numéro de maillot :</label>
+          <small style="color:#94a3b8; display:block; margin-bottom:10px; font-style:italic;">(Laisser vide pour le mode auto)</small>
+          
+          <div style="display:flex; gap:10px;">
+            <input type="text" inputmode="numeric" pattern="[0-9]*" id="modal-player-number" placeholder="Auto" autocomplete="new-password" style="flex:1; padding:10px; border-radius:5px; border:1px solid #475569; background:#0f172a; color:white; font-size:1.1em; text-align:center; min-width:0;">
+            <button id="btn-modal-save" style="padding:10px 15px; border:none; border-radius:5px; font-weight:bold; cursor:pointer; background:#22c55e; color:white;">Valider</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // On branche les boutons du menu
+  document.getElementById('btn-modal-close').addEventListener('click', closePlayerMenu);
+  document.getElementById('btn-modal-save').addEventListener('click', savePlayerMenu);
+  document.getElementById('btn-modal-captain').addEventListener('click', toggleCaptainFromMenu);
+}
+
+function openPlayerMenu(card) {
+  activePlayerCard = card;
+  const name = card.querySelector('.name').textContent;
+  const badge = card.querySelector('.badge');
+  const isCaptain = card.classList.contains('is-captain');
+  
+  // Met à jour les textes du menu
+  document.getElementById('modal-player-name').textContent = name;
+  const numInput = document.getElementById('modal-player-number');
+  numInput.value = (badge.dataset.customNum === "true") ? badge.textContent : "";
+  
+  // Adapte le bouton capitaine
+  const capBtn = document.getElementById('btn-modal-captain');
+  if (isCaptain) {
+    capBtn.textContent = "❌ Retirer le brassard";
+    capBtn.style.background = "#ef4444"; // rouge
+  } else {
+    capBtn.textContent = "© Mettre Capitaine";
+    capBtn.style.background = "#3b82f6"; // bleu
+  }
+
+  // Affiche le menu
+  document.getElementById('player-modal').style.display = "flex";
+  numInput.focus();
+}
+
+function closePlayerMenu() {
+  document.getElementById('player-modal').style.display = "none";
+  activePlayerCard = null;
+}
+
+function savePlayerMenu() {
+  if (!activePlayerCard) return;
+  const numInput = document.getElementById('modal-player-number').value.trim();
+  const badge = activePlayerCard.querySelector('.badge');
+  
+  if (numInput !== "") {
+    badge.textContent = numInput;
+    badge.dataset.customNum = "true";
+  } else {
+    badge.dataset.customNum = "false";
+    autoAssignNumbers(); // Remet le numéro automatique
+  }
+  
+  closePlayerMenu();
+}
+
+function toggleCaptainFromMenu() {
+  if (!activePlayerCard) return;
+  toggleCaptain(activePlayerCard); // Utilise ta fonction capitaine existante !
+  closePlayerMenu();
 }
 
 init();

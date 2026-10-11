@@ -6,63 +6,44 @@
   <title>Résumé du Match</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background-color: #0f172a;
-      color: #e2e8f0;
-      margin: 0;
-      padding: 20px;
-    }
+    /* ... (LE CSS RESTE EXACTEMENT LE MÊME QU'AVANT) ... */
+    body { font-family: system-ui, sans-serif; background-color: #0f172a; color: #e2e8f0; margin: 0; padding: 20px; }
     h1, h2 { color: #fff; margin-top: 0; }
-    
-    .container {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1.5fr;
-      gap: 20px;
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-    .info-panel {
-      grid-column: 1 / -1;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 15px;
-    }
-    .form-row {
-      display: flex;
-      gap: 10px;
-    }
-    
-    /* ADAPTATION MOBILE POUR LES FORMULAIRES */
-    @media (max-width: 768px) {
-      .container { grid-template-columns: 1fr; }
-      .info-panel { grid-template-columns: 1fr; } /* Empile les infos globales */
-      .form-row { flex-direction: column; gap: 0; } /* Empile Min et Type */
-    }
-    @media (max-width: 1100px) and (min-width: 769px) {
-      .container { grid-template-columns: 1fr 1fr; }
-      .preview-section { grid-column: 1 / -1; }
-    }
-    
+    .container { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 20px; max-width: 1400px; margin: 0 auto; }
+    .info-panel { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; }
+    .form-row { display: flex; gap: 10px; }
+    @media (max-width: 768px) { .container { grid-template-columns: 1fr; } .info-panel { grid-template-columns: 1fr; } .form-row { flex-direction: column; gap: 0; } }
+    @media (max-width: 1100px) and (min-width: 769px) { .container { grid-template-columns: 1fr 1fr; } .preview-section { grid-column: 1 / -1; } }
     .card { background: #1e293b; padding: 20px; border-radius: 10px; border: 1px solid #334155; }
     label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; color: #cbd5e1; }
-    input, select {
-      width: 100%; padding: 8px; margin-bottom: 15px; border-radius: 5px;
-      border: 1px solid #475569; background: #0f172a; color: white; box-sizing: border-box;
-    }
-    button {
-      padding: 10px; background: #3b82f6; color: white; border: none;
-      border-radius: 5px; font-weight: bold; cursor: pointer; width: 100%; transition: background 0.2s;
-    }
+    input, select { width: 100%; padding: 8px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #475569; background: #0f172a; color: white; box-sizing: border-box; }
+    button { padding: 10px; background: #3b82f6; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; width: 100%; transition: background 0.2s; }
     button:hover { background: #2563eb; }
-    .btn-add { background: #22c55e; }
-    .btn-add:hover { background: #16a34a; }
+    .btn-add { background: #22c55e; } .btn-add:hover { background: #16a34a; }
     .btn-cancel { background: #64748b; margin-top: 10px; display: none; }
     .btn-export { background: #eab308; color: black; font-size: 1.1em; margin-bottom: 15px; }
     .btn-actions { display: flex; gap: 5px; margin-left: 10px; }
     .btn-del { background: #ef4444; width: auto; padding: 5px 10px; margin: 0; }
     .btn-edit { background: #f59e0b; width: auto; padding: 5px 10px; margin: 0; }
-
+    .btn-retour {
+      display: inline-flex;
+      align-items: center;
+      background-color: #1e293b;
+      color: #e2e8f0;
+      text-decoration: none;
+      padding: 8px 15px;
+      border-radius: 8px;
+      font-weight: bold;
+      border: 1px solid #334155;
+      transition: background-color 0.2s, transform 0.2s;
+      margin-bottom: 15px;
+      font-size: 0.95em;
+    }
+    .btn-retour:hover {
+      background-color: #334155;
+      color: #fff;
+      transform: translateX(-3px); /* Petit effet de glissement vers la gauche */
+    }
     .timeline { list-style: none; padding: 0; margin: 0; }
     .timeline-item { display: flex; align-items: center; background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #eab308; }
     .timeline-item.auto-sep { border-left-color: #cbd5e1; opacity: 0.9; }
@@ -70,97 +51,44 @@
     .event-content { flex-grow: 1; }
     .event-title { font-weight: bold; color: #fff; font-size: 1.1em; text-transform: uppercase; }
     .event-desc { color: #cbd5e1; font-size: 0.9em; margin-top: 2px; }
-
-    /* =========================================
-       STYLE DE LA MAQUETTE & ADAPTATION MOBILE
-       ========================================= */
-    .capture-wrapper { 
-      width: 100%; 
-      display: flex; 
-      justify-content: center; 
-      overflow: hidden; 
-      background: #0f172a; 
-      border-radius: 8px; 
-      transition: height 0.3s;
-    }
-    
-    .capture-area {
-      width: 540px; height: 960px;
-      background-image: url('img/fond_resume.jpg'); 
-      background-size: cover; background-position: center;
-      position: relative; box-sizing: border-box; font-family: system-ui, sans-serif; overflow: hidden;
-      transform-origin: top center;
-    }
-
-    /* Adaptabilité automatique pour que l'image rentre sur téléphone */
-    @media (max-width: 600px) {
-      .capture-wrapper { height: 600px; padding-top: 10px; }
-      .capture-area { transform: scale(0.6); } /* Réduit visuellement l'image à 60% */
-    }
-    @media (max-width: 380px) {
-      .capture-wrapper { height: 500px; }
-      .capture-area { transform: scale(0.5); } /* Réduit encore plus sur très petit écran */
-    }
-
-    /* Classe très importante pour garantir que l'export se fait à 100% de la taille */
+    .capture-wrapper { width: 100%; display: flex; justify-content: center; overflow: hidden; background: #0f172a; border-radius: 8px; transition: height 0.3s; }
+    .capture-area { width: 540px; height: 960px; background-image: url('img/fond_resume.jpg'); background-size: cover; background-position: center; position: relative; box-sizing: border-box; font-family: system-ui, sans-serif; overflow: hidden; transform-origin: top center; }
+    @media (max-width: 600px) { .capture-wrapper { height: 600px; padding-top: 10px; } .capture-area { transform: scale(0.6); } }
+    @media (max-width: 380px) { .capture-wrapper { height: 500px; } .capture-area { transform: scale(0.5); } }
     .no-scale { transform: scale(1) !important; }
-    
     .tpl-header { position: absolute; top: 40px; left: 0; width: 100%; text-align: center; z-index: 10; padding: 0 20px; box-sizing: border-box;}
     .tpl-match-title { color: white; font-weight: 900; font-size: 1.8em; text-transform: uppercase; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); line-height: 1.1; margin-bottom: 5px; }
     .tpl-match-time { color: white; font-weight: bold; font-size: 1.2em; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
-
     .tpl-footer { position: absolute; bottom: 90px; left: 0; width: 100%; z-index: 10; padding: 0 25px; box-sizing: border-box; }
     .tpl-footer-container { display: flex; justify-content: space-between; gap: 15px; }
     .tpl-box { background: rgba(15, 23, 42, 0.95); border: 2px solid #eab308; border-radius: 8px; padding: 12px 10px; flex: 1; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.6); }
     .tpl-box-title { color: #eab308; font-weight: bold; font-size: 0.85em; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px;}
     .tpl-box-value { color: white; font-weight: 900; font-size: 1.3em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    #template-timeline { 
-      position: absolute; top: 150px; left: 40px; right: 40px; bottom: 140px; 
-      display: flex; flex-direction: column; justify-content: center; 
-    }
-
-    #timeline-events-wrapper {
-      display: flex; flex-direction: column; gap: 20px; position: relative; width: 100%;
-    }
-    
-    #timeline-events-wrapper::before {
-      content: ''; position: absolute; top: 10px; bottom: 10px; left: 69px;
-      width: 4px; background: rgba(234, 179, 8, 0.6); z-index: 0; border-radius: 2px;
-    }
-
+    #template-timeline { position: absolute; top: 150px; left: 40px; right: 40px; bottom: 140px; display: flex; flex-direction: column; justify-content: center; }
+    #timeline-events-wrapper { display: flex; flex-direction: column; gap: 20px; position: relative; width: 100%; }
+    #timeline-events-wrapper::before { content: ''; position: absolute; top: 10px; bottom: 10px; left: 69px; width: 4px; background: rgba(234, 179, 8, 0.6); z-index: 0; border-radius: 2px; }
     .tpl-item { display: flex; align-items: center; position: relative; z-index: 1; }
     .tpl-time { background: #0f172a; color: white; font-weight: bold; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 1.1em; border: 3px solid #eab308; flex-shrink: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.7); text-align: center; line-height: 1;}
     .tpl-icon { font-size: 1.8em; margin-right: 12px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); width: 35px; text-align: center; flex-shrink: 0; }
     .tpl-content { flex-grow: 1; background: rgba(15, 23, 42, 0.65); padding: 5px 15px; border-radius: 8px; }
     .tpl-title { font-weight: 900; font-size: 1.3em; text-transform: uppercase; color: #eab308; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); margin-bottom: 2px; line-height: 1.1; }
     .tpl-desc { font-size: 1.05em; color: white; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
-    
-    .tpl-separator { 
-      display: flex; align-items: center; width: 100%; margin: 5px 0;
-      color: white; font-size: 0.9em; font-weight: bold; text-transform: uppercase;
-      letter-spacing: 2px; position: relative; z-index: 2;
-    }
-    .tpl-separator::before, .tpl-separator::after {
-      content: ''; flex: 1; height: 2px; background: rgba(255, 255, 255, 0.8);
-    }
-    .tpl-separator-text {
-      background: #0f172a; 
-      padding: 4px 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.4);
-      margin: 0 10px; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    }
+    .tpl-separator { display: flex; align-items: center; width: 100%; margin: 5px 0; color: white; font-size: 0.9em; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; position: relative; z-index: 2; }
+    .tpl-separator::before, .tpl-separator::after { content: ''; flex: 1; height: 2px; background: rgba(255, 255, 255, 0.8); }
+    .tpl-separator-text { background: #0f172a; padding: 4px 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.4); margin: 0 10px; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
     .tpl-special-add { font-size: 0.85em; color: #eab308; font-weight: bold; margin-left: 5px; }
-
   </style>
 </head>
 <body>
 
+  <!-- NOUVEAU : La DataList invisible qui va stocker les noms pour l'autocomplétion -->
+  <datalist id="liste-joueurs"></datalist>
+
   <div style="max-width: 1400px; margin: 0 auto 20px auto;">
-    <h1 style="margin-top: 10px;">
-      <a href="index.html" style="text-decoration: none; color: inherit;">
-        📝 Résumé du Match
-      </a>
-    </h1>
+    <!-- Voici le bouton de retour de base -->
+    <a href="index.html" id="lien-retour" class="btn-retour">&larr; Retour à l'accueil</a>
+    
+    <h1 style="margin-top: 10px;">📝 Résumé du Match <span id="titre-equipe-dyn" style="color:#eab308; font-size:0.8em;"></span></h1>
   </div>
 
   <div class="container">
@@ -203,7 +131,8 @@
       </div>
       <div>
         <label>🏆 Homme du match</label>
-        <input type="text" id="in-hdm" placeholder="Nom du joueur">
+        <!-- AJOUT list="liste-joueurs" -->
+        <input type="text" id="in-hdm" placeholder="Nom du joueur" list="liste-joueurs">
       </div>
     </div>
 
@@ -211,7 +140,6 @@
     <div class="card">
       <h2 id="form-title">Ajouter une action de jeu</h2>
       <form id="event-form">
-        <!-- Utilisation de la classe form-row pour l'adaptation mobile -->
         <div class="form-row">
           <div style="flex: 1;" id="div-minute">
             <label>Min (ex: 45+2)</label>
@@ -232,21 +160,26 @@
 
         <div id="fields-but">
           <label>Buteur</label>
-          <input type="text" id="buteur" placeholder="Nom du buteur">
+          <!-- AJOUT list="liste-joueurs" -->
+          <input type="text" id="buteur" placeholder="Nom du buteur" list="liste-joueurs">
           <label>Passeur décisif (optionnel)</label>
-          <input type="text" id="passeur" placeholder="Nom du passeur">
+          <!-- AJOUT list="liste-joueurs" -->
+          <input type="text" id="passeur" placeholder="Nom du passeur" list="liste-joueurs">
         </div>
 
         <div id="fields-remplacement" style="display: none;">
           <label>Entrant (IN)</label>
-          <input type="text" id="entrant" placeholder="Nom du joueur entrant">
+          <!-- AJOUT list="liste-joueurs" -->
+          <input type="text" id="entrant" placeholder="Nom du joueur entrant" list="liste-joueurs">
           <label>Sortant (OUT)</label>
-          <input type="text" id="sortant" placeholder="Nom du joueur sortant">
+          <!-- AJOUT list="liste-joueurs" -->
+          <input type="text" id="sortant" placeholder="Nom du joueur sortant" list="liste-joueurs">
         </div>
 
         <div id="fields-info" style="display: none;">
           <label>Description (ex: nom du joueur pour carton)</label>
-          <input type="text" id="info-desc" placeholder="Détail de l'action...">
+          <!-- AJOUT list="liste-joueurs" -->
+          <input type="text" id="info-desc" placeholder="Détail de l'action..." list="liste-joueurs">
         </div>
 
         <button type="submit" id="submit-btn" class="btn-add">Ajouter à la liste</button>
@@ -263,19 +196,16 @@
     <!-- APERÇU -->
     <div class="card preview-section">
       <button id="btn-export" class="btn-export">📸 Télécharger l'image</button>
-      
       <div class="capture-wrapper">
+        <!-- L'id a été ajouté pour cibler le background via JS -->
         <div id="capture-area" class="capture-area">
-          
           <div class="tpl-header">
             <div id="out-titre" class="tpl-match-title">CHALLENGE 35</div>
             <div id="out-heure" class="tpl-match-time" style="display:none;"></div>
           </div>
-
           <div id="template-timeline">
             <div id="timeline-events-wrapper"></div>
           </div>
-
           <div class="tpl-footer" id="out-footer">
             <div class="tpl-footer-container">
                 <div class="tpl-box" id="out-hdm-box">
@@ -288,15 +218,87 @@
                 </div>
             </div>
           </div>
-
         </div>
       </div>
-      
     </div>
-
   </div>
 
   <script>
+    // ==========================================
+    // NOUVEAU : GESTION DE L'ÉQUIPE ET DU JSON
+    // ==========================================
+    const urlParams = new URLSearchParams(window.location.search);
+    const equipeParam = urlParams.get('equipe');
+    const captureArea = document.getElementById('capture-area');
+    const lienRetour = document.getElementById('lien-retour');
+    
+    // Variables par défaut
+    let fichierJson = '';
+    let nomEquipeLocale = 'USD'; // Sera mis à jour pour le score
+
+    if (equipeParam === 'seniorsC') {
+      document.getElementById('titre-equipe-dyn').textContent = "(Séniors C)";
+      captureArea.style.backgroundImage = "url('img/fond_equipeC.jpg')";
+      nomEquipeLocale = "USD"; 
+      fichierJson = 'data/EquipeC.json'; // REMPLACE PAR LE BON NOM DE TON FICHIER JSON
+
+      if(lienRetour) {
+        lienRetour.href = "EquipeC.html";
+        lienRetour.innerHTML = "&larr; Retour à la composition (Séniors C)";
+      }
+    } 
+    else if (equipeParam === 'u17') {
+      document.getElementById('titre-equipe-dyn').textContent = "(U17)";
+      captureArea.style.backgroundImage = "url('img/fond_u17.jpg')";
+      nomEquipeLocale = "USD U17"; // Pour le score en bas
+      fichierJson = 'data/EquipeU17.json'; // REMPLACE PAR LE BON NOM DE TON FICHIER JSON
+
+      // Mise à jour du lien pour les U17
+      if(lienRetour) {
+        lienRetour.href = "U17.html";
+        lienRetour.innerHTML = "&larr; Retour à la composition (U17)";
+      }
+    }
+
+    // Chargement des joueurs pour l'autocomplétion
+    if (fichierJson) {
+      fetch(fichierJson)
+        .then(response => response.json())
+        .then(data => {
+          const datalist = document.getElementById('liste-joueurs');
+          
+          /* /!\ ATTENTION /!\ 
+             Ici, je pars du principe que ton JSON est un tableau simple de noms 
+             ou un objet complexe. Comme je ne connais pas la structure exacte de ton 
+             fichier EquipeC.json, ce code convertit le JSON en texte et extrait 
+             les mots qui ressemblent à des noms. 
+             Si ça ne marche pas parfaitement, montre-moi un extrait de ton fichier 
+             EquipeC.json et je te ferai le code parfait en 2 secondes !
+          */
+          
+          // Méthode générique "tout-terrain" pour trouver des noms dans n'importe quel JSON
+          let allValues = JSON.stringify(data).match(/"([^"]+)"/g) || [];
+          let noms = new Set();
+          
+          allValues.forEach(val => {
+            let cleanVal = val.replace(/"/g, '');
+            // On exclut les mots techniques (id, poste, etc.)
+            if(cleanVal.length > 2 && !['Gardiens','Défenseurs','Milieux','Attaquants','id','nom','poste'].includes(cleanVal)) {
+               noms.add(cleanVal);
+            }
+          });
+
+          // Remplir la datalist
+          noms.forEach(nom => {
+            let option = document.createElement('option');
+            option.value = formatName(nom);
+            datalist.appendChild(option);
+          });
+        })
+        .catch(err => console.error("Impossible de charger le fichier JSON :", err));
+    }
+
+
     // --- FONCTION DE FORMATAGE DES PRÉNOMS ---
     function formatName(nameStr) {
       if (!nameStr) return "";
@@ -316,7 +318,6 @@
     const inHdm = document.getElementById('in-hdm');
 
     function updateGlobalInfos() {
-      // Titre & Adversaire
       let titre = inTitreSelect.value;
       if (titre === 'Autre') {
         inTitreCustom.style.display = 'block';
@@ -330,7 +331,6 @@
       if (adv) textTitre += " - " + adv;
       document.getElementById('out-titre').textContent = textTitre;
       
-      // Heure
       const heure = document.getElementById('in-heure').value.trim();
       const outHeure = document.getElementById('out-heure');
       if(heure) {
@@ -340,7 +340,6 @@
         outHeure.style.display = "none";
       }
       
-      // Homme du match
       const hdm = formatName(inHdm.value);
       const outHdmName = document.getElementById('out-hdm-name');
       outHdmName.textContent = hdm || "-";
@@ -410,16 +409,14 @@
       timelineList.innerHTML = '';
       templateTimeline.innerHTML = ''; 
       
-      // Calcul du Score
       let butsEquipe = 0;
       events.forEach(ev => { if(ev.type === 'but') butsEquipe++; });
       let butsAdv = inScoreAdv.value || 0;
       
-      let nomEquipeLocale = "USD";
       let nomAdvAbrege = inAdvAbrege.value.trim().toUpperCase() || inAdv.value.trim().substring(0, 3).toUpperCase() || "ADV";
+      // Utilise la variable nomEquipeLocale définie tout en haut selon l'URL
       document.getElementById('out-score-text').textContent = `${nomEquipeLocale} ${butsEquipe} - ${butsAdv} ${nomAdvAbrege}`;
 
-      // Tri et insertion des séparateurs auto
       events.sort((a, b) => parseMinuteForSort(a.minute) - parseMinuteForSort(b.minute));
 
       let finalRenderList = [];
@@ -441,7 +438,6 @@
       }
       finalRenderList.push({ isAuto: true, title: 'FIN DU MATCH', tempsAdd: mt2Val });
 
-      // Rendu HTML
       finalRenderList.forEach(function(ev) {
         
         if (ev.isAuto || ev.type === 'pause') {
@@ -610,25 +606,24 @@
     }
     document.getElementById('cancel-btn').addEventListener('click', cancelEditMode);
 
-// Export Image avec Menu de Partage Natif (Web Share API)
+    // Initialisation
+    updateGlobalInfos();
+
+    // Export Image avec Menu de Partage Natif (Web Share API)
     document.getElementById('btn-export').addEventListener('click', function() {
       const captureArea = document.getElementById('capture-area');
       const originalText = this.innerHTML;
       this.innerHTML = "⏳ Génération en cours..."; 
       this.style.opacity = "0.7";
 
-      // Désactive le zoom mobile pour la capture HD
       captureArea.classList.add('no-scale');
 
       html2canvas(captureArea, { scale: 2, useCORS: true }).then(canvas => {
-        // Remet le zoom mobile
         captureArea.classList.remove('no-scale');
         
-        // Convertir le canvas en fichier image réel (Blob)
         canvas.toBlob(async function(blob) {
           const file = new File([blob], 'Resume_Match.png', { type: 'image/png' });
 
-          // Si le téléphone supporte le menu de partage natif avec des fichiers
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
               await navigator.share({
@@ -639,14 +634,12 @@
               console.log('Partage annulé ou échoué', err);
             }
           } else {
-            // Solution de secours pour PC ou vieux navigateurs (téléchargement classique)
             const link = document.createElement('a');
             link.download = 'Resume_Match.png';
             link.href = URL.createObjectURL(blob);
             link.click();
           }
 
-          // Remet le bouton à la normale
           document.getElementById('btn-export').innerHTML = originalText; 
           document.getElementById('btn-export').style.opacity = "1";
           
